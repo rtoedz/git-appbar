@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+
+# Swift build artifacts
+/.build
+/Packages
+*.app
+*.dmg
+
+# Xcode
+xcuserdata/
+DerivedData/
+.swiftpm/
+
+# IDE / local tooling
+.vscode/
+.claude/
+
+# Local Claude instructions (not for public repo)
+CLAUDE.md
