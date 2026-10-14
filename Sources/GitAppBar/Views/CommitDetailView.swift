@@ -8,10 +8,11 @@ struct CommitDetailView: View {
     @Environment(Preferences.self) private var prefs
     let repo: RepoItem?
     @State private var copied = false
+    @Environment(\.locale) private var locale
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("DETAIL COMMIT")
+            Text(tr("COMMIT DETAILS", "DETAIL COMMIT"))
                 .font(.system(size: 11))
                 .tracking(0.8)
                 .foregroundStyle(Theme.textDim)
@@ -22,7 +23,7 @@ struct CommitDetailView: View {
             if let repo, let commit = store.selectedCommit {
                 content(repo: repo, commit: commit)
             } else {
-                Text("Pilih commit di tab History\nuntuk melihat detailnya.")
+                Text(tr("Select a commit in the History tab\nto see its details.", "Pilih commit di tab Riwayat\nuntuk melihat detailnya."))
                     .font(.system(size: 13))
                     .foregroundStyle(Theme.textDim)
                     .multilineTextAlignment(.center)
@@ -56,8 +57,8 @@ struct CommitDetailView: View {
 
             Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 6) {
                 GridRow {
-                    Text("Tanggal").foregroundStyle(Theme.textDim)
-                    Text("\(commit.date.formatted(date: .abbreviated, time: .shortened)) · \(commit.date.formatted(.relative(presentation: .named)))")
+                    Text(tr("Date", "Tanggal")).foregroundStyle(Theme.textDim)
+                    Text("\(commit.date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(locale))) · \(commit.date.formatted(.relative(presentation: .named).locale(locale)))")
                 }
                 GridRow {
                     Text("Hash").foregroundStyle(Theme.textDim)
@@ -72,7 +73,7 @@ struct CommitDetailView: View {
                         }
                         .buttonStyle(.plain)
                         .foregroundStyle(Theme.textDim)
-                        .accessibilityLabel("Salin hash")
+                        .accessibilityLabel(tr("Copy hash", "Salin hash"))
                     }
                 }
                 if !commit.parents.isEmpty {
@@ -99,7 +100,7 @@ struct CommitDetailView: View {
         Rectangle().fill(Theme.divider).frame(height: 1)
 
         HStack {
-            Text(files.map { "\($0.count) file berubah" } ?? "Memuat file…")
+            Text(files.map { tr("\(count($0.count, "file")) changed", "\($0.count) file berubah") } ?? tr("Loading files…", "Memuat file…"))
             Spacer()
             if let files {
                 Text("+\(files.compactMap(\.additions).reduce(0, +))").foregroundStyle(Theme.added)

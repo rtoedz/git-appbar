@@ -8,7 +8,7 @@ public struct GitError: Error, LocalizedError, Sendable {
 
     public var errorDescription: String? {
         if timedOut {
-            return "git \(args.first ?? "") tidak merespons dan dihentikan. Cek koneksi atau autentikasi remote."
+            return "git \(args.first ?? "") stopped responding and was cancelled."
         }
         let msg = stderr.trimmingCharacters(in: .whitespacesAndNewlines)
         return msg.isEmpty ? "git \(args.joined(separator: " ")) gagal (\(exitCode))" : msg

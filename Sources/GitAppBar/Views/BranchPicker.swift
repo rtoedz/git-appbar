@@ -22,14 +22,14 @@ struct BranchPicker: View {
             if let pending {
                 dirtyConfirm(pending)
             } else {
-                TextField("Cari branch…", text: $query)
+                TextField(tr("Search branches…", "Cari branch…"), text: $query)
                     .textFieldStyle(.roundedBorder)
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 2) {
-                        section("Lokal", local)
+                        section(tr("Local", "Lokal"), local)
                         section("Remote", remote)
                         if local.isEmpty && remote.isEmpty {
-                            Text(store.branches.isEmpty ? "Memuat branch…" : "Tidak ada branch cocok.")
+                            Text(store.branches.isEmpty ? tr("Loading branches…", "Memuat branch…") : tr("No matching branches.", "Tidak ada branch cocok."))
                                 .font(.system(size: 12))
                                 .foregroundStyle(Theme.textDim)
                                 .padding(8)
@@ -78,26 +78,27 @@ struct BranchPicker: View {
 
     private func dirtyConfirm(_ branch: Branch) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Pindah ke \(branch.localName)?")
+            Text(tr("Switch to \(branch.localName)?", "Pindah ke \(branch.localName)?"))
                 .font(.system(size: 14, weight: .semibold))
-            Text("Ada \(changeCount) perubahan belum di-commit di \(repo.status?.branch ?? "branch ini").")
+            Text(tr("You have \(count(changeCount, "uncommitted change")) on \(repo.status?.branch ?? "this branch").",
+                     "Ada \(changeCount) perubahan belum di-commit di \(repo.status?.branch ?? "branch ini")."))
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.textDim)
                 .fixedSize(horizontal: false, vertical: true)
             Button {
                 go(branch, stash: true)
             } label: {
-                Label("Stash dulu, lalu pindah", systemImage: "tray.and.arrow.down")
+                Label(tr("Stash first, then switch", "Stash dulu, lalu pindah"), systemImage: "tray.and.arrow.down")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             Button {
                 go(branch, stash: false)
             } label: {
-                Text("Bawa perubahan ke branch baru").frame(maxWidth: .infinity)
+                Text(tr("Bring the changes to the new branch", "Bawa perubahan ke branch baru")).frame(maxWidth: .infinity)
             }
-            .help("Git menolak kalau perubahan bentrok dengan branch tujuan")
-            Button("Batal") { pending = nil }
+            .help(tr("Git refuses if the changes conflict with the target branch", "Git menolak kalau perubahan bentrok dengan branch tujuan"))
+            Button(tr("Cancel", "Batal")) { pending = nil }
                 .buttonStyle(.plain)
                 .foregroundStyle(Theme.textDim)
                 .frame(maxWidth: .infinity)

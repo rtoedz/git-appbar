@@ -9,6 +9,9 @@ enum DebugRender {
     static func runIfRequested(preferences: Preferences, store: RepoStore) -> Bool {
         if runStressIfRequested(preferences: preferences, store: store) { return true }
         guard let path = ProcessInfo.processInfo.environment["GAB_RENDER"] else { return false }
+        if let lang = ProcessInfo.processInfo.environment["GAB_LANG"].flatMap(AppLanguage.init(rawValue:)) {
+            preferences.language = lang
+        }
         if let roots = ProcessInfo.processInfo.environment["GAB_ROOTS"] {
             preferences.rootFolders = roots.split(separator: ":").map(String.init)
         }

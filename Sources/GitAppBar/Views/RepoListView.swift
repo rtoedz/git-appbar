@@ -8,7 +8,7 @@ struct RepoListView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                Text("REPOSITORI · \(store.repos.count)")
+                Text(tr("REPOSITORIES", "REPOSITORI") + " · \(store.repos.count)")
                     .font(.system(size: 11))
                     .tracking(0.8)
                     .foregroundStyle(Theme.textDim)
@@ -23,8 +23,8 @@ struct RepoListView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(Theme.textDim)
-                .help("Scan ulang folder")
-                .accessibilityLabel("Scan ulang")
+                .help(tr("Rescan folders", "Scan ulang folder"))
+                .accessibilityLabel(tr("Rescan", "Scan ulang"))
                 .disabled(prefs.rootFolders.isEmpty)
             }
             .padding(.horizontal, 16)
@@ -55,11 +55,12 @@ struct RepoListView: View {
             Image(systemName: "folder.badge.plus")
                 .font(.system(size: 28))
                 .foregroundStyle(Theme.textDim)
-            Text("Pilih folder yang berisi repo git.\nSemua subfolder akan di-scan otomatis.")
+            Text(tr("Choose a folder that contains git repositories.\nAll subfolders are scanned automatically.",
+                     "Pilih folder yang berisi repo git.\nSemua subfolder akan di-scan otomatis."))
                 .font(.system(size: 13))
                 .foregroundStyle(Theme.textDim)
                 .multilineTextAlignment(.center)
-            Button("Pilih folder…") {
+            Button(tr("Choose folder…", "Pilih folder…")) {
                 prefs.addFolders(FolderPicker.pickFolders())
             }
             .buttonStyle(.borderedProminent)
@@ -70,11 +71,11 @@ struct RepoListView: View {
 
     private var emptyNoRepo: some View {
         VStack(spacing: 10) {
-            Text("Tidak ada repo git ditemukan\n(kedalaman \(prefs.scanDepth) level).")
+            Text(tr("No git repositories found\n(depth: \(count(prefs.scanDepth, "level"))).", "Tidak ada repo git ditemukan\n(kedalaman \(prefs.scanDepth) level)."))
                 .font(.system(size: 13))
                 .foregroundStyle(Theme.textDim)
                 .multilineTextAlignment(.center)
-            Button("Tambah folder lain…") {
+            Button(tr("Add another folder…", "Tambah folder lain…")) {
                 prefs.addFolders(FolderPicker.pickFolders())
             }
         }
@@ -115,7 +116,7 @@ private struct RepoRow: View {
                     if s.ahead > 0 { Text("↑\(s.ahead)").foregroundStyle(Theme.added) }
                     if s.isClean && s.ahead == 0 && s.behind == 0 { Text("✓ clean") }
                 } else {
-                    Text("memuat…")
+                    Text(tr("loading…", "memuat…"))
                 }
             }
             .font(Theme.mono)

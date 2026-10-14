@@ -15,7 +15,7 @@ dibuka sebagai panel selebar layar di bawah menu bar.
 |---|---|
 | `AppDelegate` | `NSStatusItem`, toggle panel |
 | `PanelController` | `NSPanel` borderless selebar layar, tutup saat klik di luar / Esc |
-| `Preferences` | opasitas, blur, folder root, editor (UserDefaults) |
+| `Preferences` | bahasa (default English, opsi Indonesia), opasitas, blur, folder, editor (UserDefaults) |
 | `GitRunner` | jalankan git dengan PATH eksplisit, `GIT_TERMINAL_PROMPT=0` |
 | `GitStatusParser` | parse `status --porcelain=v2 --branch -z` |
 | `RepoStore` (M1) | discovery repo, refresh via FSEvents, auto-fetch |

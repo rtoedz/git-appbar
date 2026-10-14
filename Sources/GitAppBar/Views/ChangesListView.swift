@@ -2,8 +2,14 @@ import SwiftUI
 import GitAppBarCore
 
 enum RepoTab: String, CaseIterable {
-    case changes = "Changes"
-    case history = "History"
+    case changes, history
+
+    var title: String {
+        switch self {
+        case .changes: return tr("Changes", "Perubahan")
+        case .history: return tr("History", "Riwayat")
+        }
+    }
 }
 
 /// Middle column: repo header with branch switcher, tabs, and their content.
@@ -54,7 +60,7 @@ struct RepoDetailView: View {
             }
             .buttonStyle(.plain)
             .disabled(store.isBusy)
-            .accessibilityLabel("Pindah branch")
+            .accessibilityLabel(tr("Switch branch", "Pindah branch"))
             .popover(isPresented: $showBranches, arrowEdge: .bottom) {
                 BranchPicker(repo: repo, isPresented: $showBranches)
                     .environment(store)
@@ -82,7 +88,7 @@ struct RepoDetailView: View {
                     tab = t
                 } label: {
                     HStack(spacing: 6) {
-                        Text(t.rawValue)
+                        Text(t.title)
                         if t == .changes, let n = repo.status?.changes.count, n > 0 {
                             Text("\(n)").foregroundStyle(Theme.textDim)
                         }
@@ -119,7 +125,7 @@ struct BannerView: View {
             Button(action: onClose) { Image(systemName: "xmark") }
                 .buttonStyle(.plain)
                 .foregroundStyle(Theme.textDim)
-                .accessibilityLabel("Tutup")
+                .accessibilityLabel(tr("Close", "Tutup"))
         }
         .padding(10)
         .background(
@@ -144,7 +150,7 @@ struct ChangesContent: View {
                     .padding(.top, 12)
                     .padding(.bottom, 8)
                 if store.hasConflicts {
-                    Label("Ada file konflik (!). Selesaikan di editor sebelum commit.", systemImage: "exclamationmark.triangle.fill")
+                    Label(tr("Some files have conflicts (!). Resolve them in your editor before committing.", "Ada file konflik (!). Selesaikan di editor sebelum commit."), systemImage: "exclamationmark.triangle.fill")
                         .font(.system(size: 12))
                         .foregroundStyle(Theme.modified)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -152,7 +158,7 @@ struct ChangesContent: View {
                         .padding(.bottom, 6)
                 }
                 if status.changes.isEmpty {
-                    Text("Working tree bersih. Tidak ada perubahan.")
+                    Text(tr("Working tree clean. No changes.", "Working tree bersih. Tidak ada perubahan."))
                         .font(.system(size: 14))
                         .foregroundStyle(Theme.textDim)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -168,7 +174,7 @@ struct ChangesContent: View {
                                     ))
                                     .toggleStyle(.checkbox)
                                     .labelsHidden()
-                                    .accessibilityLabel("Ikut commit: \(change.path)")
+                                    .accessibilityLabel(tr("Include in commit: ", "Ikut commit: ") + change.path)
                                     FileRow(
                                         path: change.path,
                                         badge: change.badge,
@@ -206,8 +212,8 @@ struct ChangesContent: View {
             ))
             .toggleStyle(.checkbox)
             .labelsHidden()
-            .accessibilityLabel("Pilih semua file")
-            Text("CHANGES · \(included) dari \(total) dipilih")
+            .accessibilityLabel(tr("Select all files", "Pilih semua file"))
+            Text(tr("CHANGES · \(included) of \(total) selected", "PERUBAHAN · \(included) dari \(total) dipilih"))
                 .font(.system(size: 11))
                 .tracking(0.8)
                 .foregroundStyle(Theme.textDim)
@@ -227,24 +233,24 @@ private struct CommitBox: View {
 
     /// Why committing is not possible right now, or nil.
     private var blockReason: String? {
-        if status.changes.isEmpty { return "Tidak ada perubahan" }
-        if store.hasConflicts { return "Selesaikan konflik dulu" }
-        if store.includedChanges.isEmpty { return "Pilih minimal 1 file" }
-        if message.isEmpty { return "Tulis pesan commit" }
+        if status.changes.isEmpty { return tr("No changes", "Tidak ada perubahan") }
+        if store.hasConflicts { return tr("Resolve conflicts first", "Selesaikan konflik dulu") }
+        if store.includedChanges.isEmpty { return tr("Select at least 1 file", "Pilih minimal 1 file") }
+        if message.isEmpty { return tr("Write a commit message", "Tulis pesan commit") }
         return nil
     }
 
     private var pushBlockReason: String? {
         if let r = blockReason { return r }
         if status.branch == nil { return "HEAD detached" }
-        if status.behind > 0 { return "Remote lebih baru (↓\(status.behind)), pull dulu" }
+        if status.behind > 0 { return tr("Remote is ahead (↓\(status.behind)), pull first", "Remote lebih baru (↓\(status.behind)), pull dulu") }
         return nil
     }
 
     var body: some View {
         @Bindable var store = store
         VStack(alignment: .leading, spacing: 8) {
-            TextField("Pesan commit ke \(status.branch ?? "HEAD")  (⌘↩ untuk commit)",
+            TextField(tr("Message for \(status.branch ?? "HEAD")  (⌘↩ to commit)", "Pesan commit ke \(status.branch ?? "HEAD")  (⌘↩ untuk commit)"),
                       text: $store.commitMessage, axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(.system(size: 13, design: .monospaced))
@@ -254,7 +260,7 @@ private struct CommitBox: View {
                 .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Theme.border))
 
             HStack(spacing: 8) {
-                Text(pushBlockReason ?? "\(store.includedChanges.count) file akan di-commit")
+                Text(pushBlockReason ?? tr("\(count(store.includedChanges.count, "file")) will be committed", "\(store.includedChanges.count) file akan di-commit"))
                     .font(.system(size: 11))
                     .foregroundStyle(blockReason == nil && pushBlockReason != nil ? Theme.modified : Theme.textDim)
                     .lineLimit(1)
@@ -268,7 +274,7 @@ private struct CommitBox: View {
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.return, modifiers: .command)
                 .disabled(blockReason != nil || store.isBusy)
-                .help(blockReason ?? "git commit file yang dipilih")
+                .help(blockReason ?? tr("git commit the selected files", "git commit file yang dipilih"))
 
                 Button {
                     Task { await store.commit(andPush: true) }
@@ -276,7 +282,7 @@ private struct CommitBox: View {
                     Text(store.busyAction == "Commit & Push" ? "Commit & Push…" : "Commit & Push")
                 }
                 .disabled(pushBlockReason != nil || store.isBusy)
-                .help(pushBlockReason ?? "Commit lalu push ke remote")
+                .help(pushBlockReason ?? tr("Commit, then push to the remote", "Commit lalu push ke remote"))
             }
             .controlSize(.regular)
         }
@@ -320,7 +326,7 @@ struct FileRow: View {
         .buttonStyle(.plain)
         .disabled(!enabled)
         .onHover { hovering = $0 }
-        .help(enabled ? "Buka di editor" : "File sudah dihapus")
+        .help(enabled ? tr("Open in editor", "Buka di editor") : tr("File was deleted", "File sudah dihapus"))
     }
 }
 

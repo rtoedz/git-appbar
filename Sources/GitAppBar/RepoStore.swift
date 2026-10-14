@@ -228,14 +228,15 @@ final class RepoStore {
 
     func switchBranch(to branch: Branch, stashFirst: Bool) async {
         guard let repo = selected, !isBusy else { return }
-        busyAction = "Pindah branch"
+        busyAction = "Switch branch"
         defer { busyAction = nil }
         do {
             let target = try await git.switchBranch(branch, in: repo.url, localBranches: branches, stashFirst: stashFirst)
-            show(stashFirst ? "Perubahan di-stash, pindah ke \(target)" : "Pindah ke \(target)", isError: false)
+            show(stashFirst ? tr("Changes stashed, switched to \(target)", "Perubahan di-stash, pindah ke \(target)")
+                          : tr("Switched to \(target)", "Pindah ke \(target)"), isError: false)
         } catch {
-            let note = stashFirst ? " Perubahanmu aman di stash." : ""
-            show(error.localizedDescription + note, isError: true)
+            let note = stashFirst ? tr(" Your changes are safe in the stash.", " Perubahanmu aman di stash.") : ""
+            show(localizedMessage(error) + note, isError: true)
         }
         await refreshStatus(of: [repo.url])
         loadSelectedDetails()
@@ -285,7 +286,7 @@ final class RepoStore {
         do {
             if let message = try await operation(repo) { show(message, isError: false) }
         } catch {
-            show(error.localizedDescription, isError: true)
+            show(localizedMessage(error), isError: true)
         }
         await refreshStatus(of: [repo.url])
         busyAction = nil
@@ -318,13 +319,13 @@ final class RepoStore {
             self.commitDrafts[repo.id] = nil
             self.excludedPaths = []
             let n = changes.count
-            guard andPush else { return "\(n) file di-commit" }
+            guard andPush else { return tr("Committed \(count(n, "file"))", "\(n) file di-commit") }
             do {
                 try await git.push(repo.url, status: try await self.currentStatus(repo))
             } catch {
                 throw PushAfterCommitError(underlying: error)
             }
-            return "\(n) file di-commit dan di-push"
+            return tr("Committed and pushed \(count(n, "file"))", "\(n) file di-commit dan di-push")
         }
     }
 
@@ -332,7 +333,8 @@ final class RepoStore {
         await perform("Fetch") { [git] repo in
             try await git.fetch(repo.url)
             let s = try await self.currentStatus(repo)
-            return s.behind > 0 ? "\(s.behind) commit baru di \(s.upstream ?? "remote")" : "Sudah up to date"
+            return s.behind > 0 ? tr("\(count(s.behind, "new commit")) on \(s.upstream ?? "remote")", "\(s.behind) commit baru di \(s.upstream ?? "remote")")
+                                : tr("Already up to date", "Sudah up to date")
         }
     }
 
@@ -343,28 +345,29 @@ final class RepoStore {
                 try await git.fetch(repo.url)
             }
             let fresh = try await self.currentStatus(repo)
-            guard fresh.behind > 0 else { return "Sudah up to date" }
+            guard fresh.behind > 0 else { return tr("Already up to date", "Sudah up to date") }
             try await git.pull(repo.url, status: fresh)
-            return "\(fresh.behind) commit di-pull ke \(fresh.branch ?? "branch ini")"
+            return tr("Pulled \(count(fresh.behind, "commit")) into \(fresh.branch ?? "this branch")", "\(fresh.behind) commit di-pull ke \(fresh.branch ?? "branch ini")")
         }
     }
 
     func push() async {
         await perform("Push") { [git] repo in
             let s = try await self.currentStatus(repo)
-            if s.upstream != nil && s.ahead == 0 { return "Tidak ada commit untuk di-push" }
+            if s.upstream != nil && s.ahead == 0 { return tr("Nothing to push", "Tidak ada commit untuk di-push") }
             try await git.push(repo.url, status: s)
-            return s.upstream == nil ? "Branch \(s.branch ?? "") dipublikasikan ke remote" : "\(s.ahead) commit di-push"
+            return s.upstream == nil ? tr("Published branch \(s.branch ?? "") to the remote", "Branch \(s.branch ?? "") dipublikasikan ke remote")
+                                    : tr("Pushed \(count(s.ahead, "commit"))", "\(s.ahead) commit di-push")
         }
     }
 
     func stash(message: String?) async {
         await perform("Stash", reloadHistory: false) { [git] repo in
             let s = try await self.currentStatus(repo)
-            guard !s.changes.isEmpty else { return "Tidak ada perubahan untuk di-stash" }
+            guard !s.changes.isEmpty else { return tr("No changes to stash", "Tidak ada perubahan untuk di-stash") }
             try await git.stashPush(repo.url, message: message)
             self.excludedPaths = []
-            return "\(s.changes.count) file disimpan ke stash"
+            return tr("Stashed \(count(s.changes.count, "file"))", "\(s.changes.count) file disimpan ke stash")
         }
     }
 
@@ -375,14 +378,14 @@ final class RepoStore {
             } catch {
                 throw StashPopError(underlying: error)
             }
-            return "Stash dikembalikan ke working tree"
+            return tr("Stash restored to the working tree", "Stash dikembalikan ke working tree")
         }
     }
 
     func applyStash(_ entry: StashEntry) async {
         await perform("Stash apply", reloadHistory: false) { [git] repo in
             try await git.stashApply(repo.url, ref: entry.ref)
-            return "Stash diterapkan (tetap tersimpan di daftar)"
+            return tr("Stash applied (still kept in the list)", "Stash diterapkan (tetap tersimpan di daftar)")
         }
     }
 
@@ -408,9 +411,9 @@ final class RepoStore {
             await refreshStatus(of: batch)
         }
         if failed.isEmpty {
-            show("Semua \(urls.count) repo sudah di-fetch", isError: false)
+            show(tr("Fetched all \(count(urls.count, "repository", "repositories"))", "Semua \(urls.count) repo sudah di-fetch"), isError: false)
         } else {
-            show("Fetch gagal di: \(failed.sorted().joined(separator: ", "))", isError: true)
+            show(tr("Fetch failed for: ", "Fetch gagal di: ") + failed.sorted().joined(separator: ", "), isError: true)
         }
         if let repo = selected, !isBusy { await reloadStashes(repo) }
     }
@@ -419,13 +422,14 @@ final class RepoStore {
 struct PushAfterCommitError: LocalizedError {
     let underlying: Error
     var errorDescription: String? {
-        "Commit tersimpan, tapi push gagal: \(underlying.localizedDescription)"
+        tr("Committed, but the push failed: ", "Commit tersimpan, tapi push gagal: ") + localizedMessage(underlying)
     }
 }
 
 struct StashPopError: LocalizedError {
     let underlying: Error
     var errorDescription: String? {
-        "Stash tidak bisa dikembalikan (kemungkinan konflik). Stash tetap tersimpan, tidak ada yang hilang. \(underlying.localizedDescription)"
+        tr("The stash could not be restored (probably a conflict). It is still saved, nothing was lost. ",
+           "Stash tidak bisa dikembalikan (kemungkinan konflik). Stash tetap tersimpan, tidak ada yang hilang. ") + localizedMessage(underlying)
     }
 }

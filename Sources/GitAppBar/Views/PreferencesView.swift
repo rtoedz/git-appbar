@@ -6,11 +6,24 @@ struct PreferencesView: View {
     var body: some View {
         @Bindable var prefs = prefs
         VStack(alignment: .leading, spacing: 16) {
-            Text("Preferensi").font(.system(size: 14, weight: .semibold))
+            Text(tr("Preferences", "Preferensi")).font(.system(size: 14, weight: .semibold))
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(tr("Language", "Bahasa"))
+                Picker(tr("Language", "Bahasa"), selection: $prefs.language) {
+                    ForEach(AppLanguage.allCases) { lang in
+                        Text(lang.displayName).tag(lang)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+
+            Divider()
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
-                    Text("Opasitas background")
+                    Text(tr("Background opacity", "Opasitas background"))
                     Spacer()
                     Text("\(Int(prefs.opacity * 100))%")
                         .font(Theme.mono)
@@ -18,7 +31,7 @@ struct PreferencesView: View {
                 }
                 Slider(value: $prefs.opacity, in: 0.3...1.0)
                 HStack {
-                    Text("Transparan")
+                    Text(tr("Transparent", "Transparan"))
                     Spacer()
                     Text("Solid")
                 }
@@ -26,7 +39,7 @@ struct PreferencesView: View {
                 .foregroundStyle(Theme.textDim)
             }
 
-            Toggle("Blur di belakang panel (vibrancy)", isOn: $prefs.blur)
+            Toggle(tr("Blur behind the panel (vibrancy)", "Blur di belakang panel (vibrancy)"), isOn: $prefs.blur)
 
             Divider()
 
@@ -34,9 +47,9 @@ struct PreferencesView: View {
 
             Stepper(value: $prefs.scanDepth, in: 1...8) {
                 HStack {
-                    Text("Kedalaman scan")
+                    Text(tr("Scan depth", "Kedalaman scan"))
                     Spacer()
-                    Text("\(prefs.scanDepth) level").font(Theme.mono).foregroundStyle(Theme.textDim)
+                    Text(tr(count(prefs.scanDepth, "level"), "\(prefs.scanDepth) level")).font(Theme.mono).foregroundStyle(Theme.textDim)
                 }
             }
 
@@ -61,9 +74,9 @@ struct FolderListSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Folder yang di-scan")
+            Text(tr("Scanned folders", "Folder yang di-scan"))
             if prefs.rootFolders.isEmpty {
-                Text("Belum ada folder.")
+                Text(tr("No folders yet.", "Belum ada folder."))
                     .font(.system(size: 12))
                     .foregroundStyle(Theme.textDim)
             }
@@ -81,13 +94,13 @@ struct FolderListSection: View {
                         Image(systemName: "minus.circle")
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Hapus folder \(folder)")
+                    .accessibilityLabel(tr("Remove folder ", "Hapus folder ") + folder)
                 }
             }
             Button {
                 prefs.addFolders(FolderPicker.pickFolders())
             } label: {
-                Label("Tambah folder…", systemImage: "plus")
+                Label(tr("Add folder…", "Tambah folder…"), systemImage: "plus")
             }
         }
     }

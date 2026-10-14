@@ -19,7 +19,7 @@ struct PanelRootView: View {
                         RepoDetailView(repo: repo)
                             .id(repo.id)
                     } else {
-                        placeholder("Pilih repo di kiri.")
+                        placeholder(tr("Select a repository on the left.", "Pilih repo di kiri."))
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -37,6 +37,7 @@ struct PanelRootView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(Theme.border, lineWidth: 1)
         )
+        .environment(\.locale, Localizer.shared.locale)
         .onAppear { if !debugRender { rescan() } }
         .onChange(of: prefs.rootFolders) { rescan() }
         .onChange(of: prefs.scanDepth) { rescan() }
@@ -58,7 +59,7 @@ struct PanelRootView: View {
     private var header: some View {
         HStack(spacing: 12) {
             Text("Source Control").font(.system(size: 15, weight: .semibold))
-            Text("\(store.repos.count) repo · \(prefs.rootFolders.count) folder")
+            Text(tr("\(count(store.repos.count, "repo")) · \(count(prefs.rootFolders.count, "folder"))", "\(store.repos.count) repo · \(prefs.rootFolders.count) folder"))
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.textDim)
             Spacer()
@@ -71,7 +72,7 @@ struct PanelRootView: View {
                     } else {
                         Image(systemName: "arrow.triangle.2.circlepath")
                     }
-                    Text("Fetch semua")
+                    Text(tr("Fetch all", "Fetch semua"))
                 }
                 .font(.system(size: 12))
                 .padding(.horizontal, 10)
@@ -82,7 +83,7 @@ struct PanelRootView: View {
             }
             .buttonStyle(.plain)
             .disabled(store.isFetchingAll || store.repos.isEmpty)
-            .help("git fetch --prune di semua repo")
+            .help(tr("git fetch --prune in every repository", "git fetch --prune di semua repo"))
             Button {
                 showPreferences.toggle()
             } label: {
@@ -91,10 +92,11 @@ struct PanelRootView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Preferensi")
+            .accessibilityLabel(tr("Preferences", "Preferensi"))
             .popover(isPresented: $showPreferences, arrowEdge: .bottom) {
                 PreferencesView()
                     .environment(prefs)
+                    .environment(\.locale, Localizer.shared.locale)
             }
         }
         .padding(.horizontal, 16)

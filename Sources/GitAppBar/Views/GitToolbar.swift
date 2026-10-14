@@ -22,7 +22,8 @@ struct GitToolbar: View {
                 Task { await store.pull() }
             }
             .disabled(status?.upstream == nil)
-            .help(status?.upstream == nil ? "Branch ini belum punya upstream" : "git pull --ff-only (tidak pernah merge/rebase otomatis)")
+            .help(status?.upstream == nil ? tr("This branch has no upstream", "Branch ini belum punya upstream")
+                                           : tr("git pull --ff-only (never merges or rebases for you)", "git pull --ff-only (tidak pernah merge/rebase otomatis)"))
 
             ToolbarButton(title: "Push", icon: "arrow.up", count: status?.ahead, countColor: Theme.added,
                           busy: store.busyAction == "Push") {
@@ -45,9 +46,9 @@ struct GitToolbar: View {
 
     private var pushHelp: String {
         guard let s = status else { return "" }
-        if s.behind > 0 { return "Remote lebih baru (↓\(s.behind)). Pull dulu sebelum push." }
-        if s.upstream == nil { return "Publikasikan branch ini ke remote" }
-        return "git push (tanpa force)"
+        if s.behind > 0 { return tr("The remote is ahead (↓\(s.behind)). Pull before pushing.", "Remote lebih baru (↓\(s.behind)). Pull dulu sebelum push.") }
+        if s.upstream == nil { return tr("Publish this branch to the remote", "Publikasikan branch ini ke remote") }
+        return tr("git push (never forced)", "git push (tanpa force)")
     }
 }
 
@@ -104,22 +105,22 @@ private struct StashMenu: View {
             Text("Stash").font(.system(size: 14, weight: .semibold))
 
             HStack(spacing: 8) {
-                TextField("Pesan stash (opsional)", text: $message)
+                TextField(tr("Stash message (optional)", "Pesan stash (opsional)"), text: $message)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit(stashNow)
-                Button("Stash \(changeCount) file", action: stashNow)
+                Button(tr("Stash \(count(changeCount, "file"))", "Stash \(changeCount) file"), action: stashNow)
                     .disabled(changeCount == 0)
             }
 
             Divider()
 
-            Text("TERSIMPAN · \(store.stashes.count)")
+            Text(tr("SAVED", "TERSIMPAN") + " · \(store.stashes.count)")
                 .font(.system(size: 11))
                 .tracking(0.8)
                 .foregroundStyle(Theme.textDim)
 
             if store.stashes.isEmpty {
-                Text("Belum ada stash.")
+                Text(tr("No stashes yet.", "Belum ada stash."))
                     .font(.system(size: 12))
                     .foregroundStyle(Theme.textDim)
             } else {
@@ -168,9 +169,9 @@ private struct StashRow: View {
             }
             Spacer(minLength: 6)
             Button("Apply") { onRestore(true) }
-                .help("Terapkan, stash tetap disimpan")
+                .help(tr("Apply and keep the stash", "Terapkan, stash tetap disimpan"))
             Button("Pop") { onRestore(false) }
-                .help("Terapkan lalu hapus dari daftar (tetap disimpan kalau konflik)")
+                .help(tr("Apply and remove it from the list (kept if it conflicts)", "Terapkan lalu hapus dari daftar (tetap disimpan kalau konflik)"))
         }
         .controlSize(.small)
         .padding(.vertical, 4)

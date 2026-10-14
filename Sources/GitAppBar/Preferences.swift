@@ -11,6 +11,7 @@ final class Preferences {
         static let legacyRootFolder = "repos.rootFolder"
         static let scanDepth = "repos.scanDepth"
         static let editorCommand = "editor.command"
+        static let language = "app.language"
     }
 
     private let defaults: UserDefaults
@@ -40,8 +41,19 @@ final class Preferences {
         didSet { defaults.set(editorCommand, forKey: Key.editorCommand) }
     }
 
+    /// UI language; English unless the user picks another one.
+    var language: AppLanguage {
+        didSet {
+            defaults.set(language.rawValue, forKey: Key.language)
+            Localizer.shared.language = language
+        }
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        let savedLanguage = defaults.string(forKey: Key.language).flatMap(AppLanguage.init(rawValue:)) ?? .english
+        language = savedLanguage
+        Localizer.shared.language = savedLanguage
         opacity = defaults.object(forKey: Key.opacity) as? Double ?? 0.82
         blur = defaults.object(forKey: Key.blur) as? Bool ?? true
         if let folders = defaults.stringArray(forKey: Key.rootFolders) {

@@ -9,8 +9,9 @@ enum FolderPicker {
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = true
         panel.canCreateDirectories = false
-        panel.prompt = "Pilih"
-        panel.message = "Pilih folder yang berisi repo git. Subfolder akan di-scan otomatis."
+        panel.prompt = tr("Choose", "Pilih")
+        panel.message = tr("Choose folders that contain git repositories. Subfolders are scanned automatically.",
+                           "Pilih folder yang berisi repo git. Subfolder akan di-scan otomatis.")
         panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser
         // The repo panel sits at .statusBar level; keep the chooser above it.
         panel.level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)

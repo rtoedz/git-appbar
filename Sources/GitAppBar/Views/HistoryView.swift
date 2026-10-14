@@ -18,7 +18,7 @@ struct HistoryView: View {
         if store.historyLoading && store.historyItems.isEmpty {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if store.historyItems.isEmpty {
-            Text("Belum ada commit.")
+            Text(tr("No commits yet.", "Belum ada commit."))
                 .foregroundStyle(Theme.textDim)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
@@ -55,16 +55,16 @@ private struct HistoryFooter: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Text("\(store.history.count) commit dimuat")
+            Text(tr("\(count(store.history.count, "commit")) loaded", "\(store.history.count) commit dimuat"))
                 .foregroundStyle(Theme.textDim)
             Spacer()
             if store.historyLoadingMore {
                 ProgressView().controlSize(.small)
-                Text("Memuat…").foregroundStyle(Theme.textDim)
+                Text(tr("Loading…", "Memuat…")).foregroundStyle(Theme.textDim)
             } else if store.historyHasMore {
-                Button("Muat \(store.historyPageSize) lagi") { store.loadMoreHistory() }
+                Button(tr("Load \(store.historyPageSize) more", "Muat \(store.historyPageSize) lagi")) { store.loadMoreHistory() }
             } else {
-                Text("Awal riwayat").foregroundStyle(Theme.textDim)
+                Text(tr("Beginning of history", "Awal riwayat")).foregroundStyle(Theme.textDim)
             }
         }
         .font(.system(size: 12))
@@ -83,6 +83,7 @@ private struct CommitRow: View {
     let currentBranch: String?
     let action: () -> Void
     @State private var hovering = false
+    @Environment(\.locale) private var locale
 
     var body: some View {
         Button(action: action) {
@@ -121,7 +122,7 @@ private struct CommitRow: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
-        .help("\(commit.author) · \(commit.date.formatted(date: .abbreviated, time: .shortened))")
+        .help("\(commit.author) · \(commit.date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(locale)))")
     }
 
     private var rowBackground: some View {
@@ -235,7 +236,7 @@ private struct ExpandedFiles: View {
             VStack(alignment: .leading, spacing: 0) {
                 if let files = store.commitFiles[hash] {
                     if files.isEmpty {
-                        Text("Tidak ada file berubah.")
+                        Text(tr("No files changed.", "Tidak ada file berubah."))
                             .font(.system(size: 12))
                             .foregroundStyle(Theme.textDim)
                             .frame(height: 28)

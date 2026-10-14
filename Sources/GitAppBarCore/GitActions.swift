@@ -31,13 +31,13 @@ public enum GitActionError: LocalizedError, Equatable {
 
     public var errorDescription: String? {
         switch self {
-        case .emptyMessage: return "Tulis pesan commit dulu."
-        case .nothingSelected: return "Pilih minimal 1 file untuk di-commit."
-        case .unresolvedConflicts: return "Masih ada konflik merge. Selesaikan di editor dulu."
-        case .noUpstreamToPull: return "Branch ini belum punya upstream di remote, jadi tidak ada yang bisa di-pull."
-        case .behindRemote(let n): return "Remote punya \(n) commit yang belum kamu pull. Pull dulu sebelum push."
-        case .noRemote: return "Repo ini tidak punya remote."
-        case .detachedHead: return "HEAD sedang detached. Pindah ke sebuah branch dulu."
+        case .emptyMessage: return "Write a commit message first."
+        case .nothingSelected: return "Select at least 1 file to commit."
+        case .unresolvedConflicts: return "There are unresolved merge conflicts."
+        case .noUpstreamToPull: return "This branch has no upstream to pull from."
+        case .behindRemote(let n): return "The remote has \(n) commit(s) you haven't pulled. Pull before pushing."
+        case .noRemote: return "This repository has no remote."
+        case .detachedHead: return "HEAD is detached. Switch to a branch first."
         }
     }
 }
