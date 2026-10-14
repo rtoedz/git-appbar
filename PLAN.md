@@ -23,6 +23,7 @@ dibuka sebagai panel selebar layar di bawah menu bar.
 
 ## Milestone
 - [x] **M0** — project, ikon menu bar, panel lebar transparan + Preferensi (opasitas, blur), parser status + test.
+- [x] **M1a** — pilih folder (NSOpenPanel, multi-folder) + kedalaman scan di Preferensi, `RepoScanner` (skip node_modules dsb, berhenti di root repo), status semua repo paralel, daftar changes repo terpilih.
 - [ ] **M1 Read-only** — scan repo di folder root, status per repo, history (`git log`), detail commit (`git show --numstat`), buka file di editor (`code -g`).
 - [ ] **M2 Aksi** — stage/unstage, commit, commit & push, fetch, pull (`--ff-only`), push, stash push/pop/list, switch branch (auto-stash).
 - [ ] **M3 Polish** — FSEvents live refresh, hotkey global ⌥⌘G, auto-fetch berkala, notifikasi, launch at login, ikon app.

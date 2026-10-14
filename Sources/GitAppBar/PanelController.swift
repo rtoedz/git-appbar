@@ -17,7 +17,10 @@ final class PanelController {
     private let topGap: CGFloat = 4
     private let maxHeight: CGFloat = 860
 
-    init(preferences: Preferences) {
+    private let store: RepoStore
+
+    init(preferences: Preferences, store: RepoStore) {
+        self.store = store
         panel = KeyablePanel(
             contentRect: .zero,
             styleMask: [.borderless, .nonactivatingPanel],
@@ -32,7 +35,7 @@ final class PanelController {
         panel.isMovable = false
         panel.isReleasedWhenClosed = false
 
-        let host = NSHostingView(rootView: PanelRootView().environment(preferences))
+        let host = NSHostingView(rootView: PanelRootView().environment(preferences).environment(store))
         host.wantsLayer = true
         host.layer?.backgroundColor = .clear
         panel.contentView = host
@@ -58,6 +61,7 @@ final class PanelController {
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
         installMonitors()
+        Task { await store.refreshStatuses() }
     }
 
     func hide() {
@@ -71,7 +75,8 @@ final class PanelController {
             Task { @MainActor in self?.hide() }
         }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.keyCode == 53 { // Esc
+            // Esc closes the panel only when it comes from the panel itself, not the folder chooser.
+            if event.keyCode == 53, event.window === self?.panel {
                 self?.hide()
                 return nil
             }

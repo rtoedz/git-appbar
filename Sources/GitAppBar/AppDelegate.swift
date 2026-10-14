@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var panel: PanelController!
     let preferences = Preferences()
+    let store = RepoStore()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -15,7 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             button.action = #selector(togglePanel)
         }
 
-        panel = PanelController(preferences: preferences)
+        panel = PanelController(preferences: preferences, store: store)
 
         if ProcessInfo.processInfo.environment["GAB_OPEN_ON_LAUNCH"] == "1" {
             togglePanel()

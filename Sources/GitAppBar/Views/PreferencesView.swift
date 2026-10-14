@@ -30,12 +30,18 @@ struct PreferencesView: View {
 
             Divider()
 
-            LabeledContent("Folder repo") {
-                TextField("~/Project", text: $prefs.rootFolder)
-                    .textFieldStyle(.roundedBorder)
-                    .font(Theme.mono)
-                    .frame(width: 170)
+            FolderListSection()
+
+            Stepper(value: $prefs.scanDepth, in: 1...8) {
+                HStack {
+                    Text("Kedalaman scan")
+                    Spacer()
+                    Text("\(prefs.scanDepth) level").font(Theme.mono).foregroundStyle(Theme.textDim)
+                }
             }
+
+            Divider()
+
             LabeledContent("Editor") {
                 TextField("code -g", text: $prefs.editorCommand)
                     .textFieldStyle(.roundedBorder)
@@ -45,6 +51,44 @@ struct PreferencesView: View {
         }
         .font(.system(size: 13))
         .padding(16)
-        .frame(width: 320)
+        .frame(width: 360)
+    }
+}
+
+/// Folders that are scanned for repos, with add (native picker) and remove.
+struct FolderListSection: View {
+    @Environment(Preferences.self) private var prefs
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Folder yang di-scan")
+            if prefs.rootFolders.isEmpty {
+                Text("Belum ada folder.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.textDim)
+            }
+            ForEach(prefs.rootFolders, id: \.self) { folder in
+                HStack(spacing: 8) {
+                    Image(systemName: "folder").foregroundStyle(Theme.textDim)
+                    Text(folder)
+                        .font(Theme.mono)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer()
+                    Button {
+                        prefs.removeFolder(folder)
+                    } label: {
+                        Image(systemName: "minus.circle")
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Hapus folder \(folder)")
+                }
+            }
+            Button {
+                prefs.addFolders(FolderPicker.pickFolders())
+            } label: {
+                Label("Tambah folder…", systemImage: "plus")
+            }
+        }
     }
 }
