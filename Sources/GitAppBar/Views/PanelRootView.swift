@@ -4,6 +4,7 @@ struct PanelRootView: View {
     @Environment(Preferences.self) private var prefs
     @Environment(RepoStore.self) private var store
     @State private var showPreferences = false
+    @Environment(\.debugRender) private var debugRender
 
     var body: some View {
         VStack(spacing: 0) {
@@ -15,15 +16,17 @@ struct PanelRootView: View {
                 Rectangle().fill(Theme.divider).frame(width: 1)
                 Group {
                     if let repo = store.selected {
-                        ChangesListView(repo: repo)
+                        RepoDetailView(repo: repo)
+                            .id(repo.id)
                     } else {
                         placeholder("Pilih repo di kiri.")
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 Rectangle().fill(Theme.divider).frame(width: 1)
-                placeholder("History & detail commit — M1 berikutnya")
-                    .frame(width: 440)
+                CommitDetailView(repo: store.selected)
+                    .frame(width: 420)
+                    .frame(maxHeight: .infinity)
                     .background(Color.white.opacity(0.025))
             }
         }
@@ -34,7 +37,7 @@ struct PanelRootView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(Theme.border, lineWidth: 1)
         )
-        .onAppear(perform: rescan)
+        .onAppear { if !debugRender { rescan() } }
         .onChange(of: prefs.rootFolders) { rescan() }
         .onChange(of: prefs.scanDepth) { rescan() }
     }
@@ -45,7 +48,7 @@ struct PanelRootView: View {
 
     private var background: some View {
         ZStack {
-            if prefs.blur {
+            if prefs.blur && !debugRender {
                 VisualEffectBackground()
             }
             Theme.panel.opacity(prefs.opacity)

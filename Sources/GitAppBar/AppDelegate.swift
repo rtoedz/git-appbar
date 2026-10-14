@@ -8,6 +8,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let store = RepoStore()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if DebugRender.runIfRequested(preferences: preferences, store: store) { return }
+
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.image = NSImage(systemSymbolName: "arrow.triangle.branch", accessibilityDescription: "Git AppBar")

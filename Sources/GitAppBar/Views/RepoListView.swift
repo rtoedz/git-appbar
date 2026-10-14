@@ -36,7 +36,7 @@ struct RepoListView: View {
             } else if store.repos.isEmpty && !store.isScanning {
                 emptyNoRepo
             } else {
-                ScrollView {
+                PanelScroll {
                     LazyVStack(spacing: 2) {
                         ForEach(store.repos) { repo in
                             RepoRow(repo: repo, isSelected: repo.id == store.selectedID)

@@ -39,6 +39,10 @@ final class PanelController {
         host.wantsLayer = true
         host.layer?.backgroundColor = .clear
         panel.contentView = host
+
+        NotificationCenter.default.addObserver(forName: .gabHidePanel, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.hide() }
+        }
     }
 
     var isVisible: Bool { panel.isVisible }
