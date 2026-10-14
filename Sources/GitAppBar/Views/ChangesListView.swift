@@ -28,6 +28,10 @@ struct RepoDetailView: View {
             case .history: HistoryView(repo: repo)
             }
         }
+        .onAppear {
+            // Land where the work is: uncommitted changes → Changes tab.
+            if let n = repo.status?.changes.count, n > 0 { tab = .changes }
+        }
     }
 
     private var header: some View {
@@ -63,8 +67,8 @@ struct RepoDetailView: View {
                 if s.behind > 0 { Text("↓\(s.behind)").font(Theme.mono).foregroundStyle(Theme.behind) }
                 if s.ahead > 0 { Text("↑\(s.ahead)").font(Theme.mono).foregroundStyle(Theme.added) }
             }
-            if store.isBusy { ProgressView().controlSize(.small) }
-            Spacer()
+            Spacer(minLength: 12)
+            GitToolbar(repo: repo)
         }
         .padding(.horizontal, 18)
         .padding(.top, 14)
@@ -125,32 +129,60 @@ struct BannerView: View {
     }
 }
 
-/// Working-tree changes for the repo (read-only until M2). Click opens the file.
+/// Working-tree changes: commit box on top, then every changed file with a
+/// checkbox (all included by default). Clicking a file name opens it.
 struct ChangesContent: View {
     @Environment(Preferences.self) private var prefs
+    @Environment(RepoStore.self) private var store
     let repo: RepoItem
 
     var body: some View {
         if let status = repo.status {
-            if status.changes.isEmpty {
-                Text("Working tree bersih. Tidak ada perubahan.")
-                    .font(.system(size: 14))
-                    .foregroundStyle(Theme.textDim)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                PanelScroll {
-                    LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(status.changes) { change in
-                            FileRow(
-                                path: change.path,
-                                badge: change.badge,
-                                trailing: change.isStaged ? "staged" : nil
-                            ) {
-                                EditorOpener.open(repo.url.appendingPathComponent(change.path), command: prefs.editorCommand)
+            VStack(spacing: 0) {
+                CommitBox(repo: repo, status: status)
+                    .padding(.horizontal, 14)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
+                if store.hasConflicts {
+                    Label("Ada file konflik (!). Selesaikan di editor sebelum commit.", systemImage: "exclamationmark.triangle.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Theme.modified)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 18)
+                        .padding(.bottom, 6)
+                }
+                if status.changes.isEmpty {
+                    Text("Working tree bersih. Tidak ada perubahan.")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Theme.textDim)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    selectAllRow(status)
+                    PanelScroll {
+                        LazyVStack(alignment: .leading, spacing: 0) {
+                            ForEach(status.changes) { change in
+                                HStack(spacing: 4) {
+                                    Toggle("", isOn: Binding(
+                                        get: { !store.excludedPaths.contains(change.path) },
+                                        set: { _ in store.toggleIncluded(change.path) }
+                                    ))
+                                    .toggleStyle(.checkbox)
+                                    .labelsHidden()
+                                    .accessibilityLabel("Ikut commit: \(change.path)")
+                                    FileRow(
+                                        path: change.path,
+                                        badge: change.badge,
+                                        trailing: change.isStaged ? "staged" : nil
+                                    ) {
+                                        EditorOpener.open(repo.url.appendingPathComponent(change.path), command: prefs.editorCommand)
+                                    }
+                                }
+                                .padding(.leading, 10)
                             }
                         }
+                        .padding(.horizontal, 4)
+                        .padding(.bottom, 10)
                     }
-                    .padding(10)
                 }
             }
         } else if let error = repo.error {
@@ -161,6 +193,92 @@ struct ChangesContent: View {
             Spacer()
         } else {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private func selectAllRow(_ status: RepoStatus) -> some View {
+        let included = store.includedChanges.count
+        let total = status.changes.count
+        return HStack(spacing: 8) {
+            Toggle("", isOn: Binding(
+                get: { included == total },
+                set: { store.setAllIncluded($0) }
+            ))
+            .toggleStyle(.checkbox)
+            .labelsHidden()
+            .accessibilityLabel("Pilih semua file")
+            Text("CHANGES · \(included) dari \(total) dipilih")
+                .font(.system(size: 11))
+                .tracking(0.8)
+                .foregroundStyle(Theme.textDim)
+            Spacer()
+        }
+        .padding(.leading, 24)
+        .padding(.vertical, 4)
+    }
+}
+
+private struct CommitBox: View {
+    @Environment(RepoStore.self) private var store
+    let repo: RepoItem
+    let status: RepoStatus
+
+    private var message: String { store.commitMessage.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    /// Why committing is not possible right now, or nil.
+    private var blockReason: String? {
+        if status.changes.isEmpty { return "Tidak ada perubahan" }
+        if store.hasConflicts { return "Selesaikan konflik dulu" }
+        if store.includedChanges.isEmpty { return "Pilih minimal 1 file" }
+        if message.isEmpty { return "Tulis pesan commit" }
+        return nil
+    }
+
+    private var pushBlockReason: String? {
+        if let r = blockReason { return r }
+        if status.branch == nil { return "HEAD detached" }
+        if status.behind > 0 { return "Remote lebih baru (↓\(status.behind)), pull dulu" }
+        return nil
+    }
+
+    var body: some View {
+        @Bindable var store = store
+        VStack(alignment: .leading, spacing: 8) {
+            TextField("Pesan commit ke \(status.branch ?? "HEAD")  (⌘↩ untuk commit)",
+                      text: $store.commitMessage, axis: .vertical)
+                .textFieldStyle(.plain)
+                .font(.system(size: 13, design: .monospaced))
+                .lineLimit(2...6)
+                .padding(10)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color.black.opacity(0.25)))
+                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Theme.border))
+
+            HStack(spacing: 8) {
+                Text(pushBlockReason ?? "\(store.includedChanges.count) file akan di-commit")
+                    .font(.system(size: 11))
+                    .foregroundStyle(blockReason == nil && pushBlockReason != nil ? Theme.modified : Theme.textDim)
+                    .lineLimit(1)
+                Spacer()
+                Button {
+                    Task { await store.commit(andPush: false) }
+                } label: {
+                    Label(store.busyAction == "Commit" ? "Commit…" : "Commit", systemImage: "checkmark")
+                        .frame(minWidth: 80)
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.return, modifiers: .command)
+                .disabled(blockReason != nil || store.isBusy)
+                .help(blockReason ?? "git commit file yang dipilih")
+
+                Button {
+                    Task { await store.commit(andPush: true) }
+                } label: {
+                    Text(store.busyAction == "Commit & Push" ? "Commit & Push…" : "Commit & Push")
+                }
+                .disabled(pushBlockReason != nil || store.isBusy)
+                .help(pushBlockReason ?? "Commit lalu push ke remote")
+            }
+            .controlSize(.regular)
         }
     }
 }

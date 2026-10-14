@@ -63,6 +63,27 @@ struct PanelRootView: View {
                 .foregroundStyle(Theme.textDim)
             Spacer()
             Button {
+                Task { await store.fetchAll() }
+            } label: {
+                HStack(spacing: 6) {
+                    if store.isFetchingAll {
+                        ProgressView().controlSize(.mini)
+                    } else {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                    }
+                    Text("Fetch semua")
+                }
+                .font(.system(size: 12))
+                .padding(.horizontal, 10)
+                .frame(height: 28)
+                .background(RoundedRectangle(cornerRadius: 7).fill(Color.white.opacity(0.06)))
+                .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Theme.border))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(store.isFetchingAll || store.repos.isEmpty)
+            .help("git fetch --prune di semua repo")
+            Button {
                 showPreferences.toggle()
             } label: {
                 Image(systemName: "gearshape")

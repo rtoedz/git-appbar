@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if DebugRender.runIfRequested(preferences: preferences, store: store) { return }
+        if DebugActionTest.runIfRequested(store: store) { return }
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
