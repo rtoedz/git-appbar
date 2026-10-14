@@ -29,6 +29,23 @@ enum DebugRender {
             }
 
             let renderWidth = CGFloat(Double(ProcessInfo.processInfo.environment["GAB_RENDER_WIDTH"] ?? "") ?? 1600)
+            if ProcessInfo.processInfo.environment["GAB_RENDER_VIEW"] == "prefs" {
+                let prefsView = PreferencesView()
+                    .environment(preferences)
+                    .environment(\.debugRender, true)
+                    .foregroundStyle(Theme.text)
+                    .background(Color(red: 0.13, green: 0.14, blue: 0.16))
+                    .environment(\.colorScheme, .dark)
+                let r = ImageRenderer(content: prefsView)
+                r.scale = 2
+                if let tiff = r.nsImage?.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
+                   let png = rep.representation(using: .png, properties: [:]) {
+                    try? png.write(to: URL(fileURLWithPath: path))
+                    print("rendered \(path)")
+                }
+                NSApp.terminate(nil)
+                return
+            }
             let view = PanelRootView()
                 .environment(preferences)
                 .environment(store)
