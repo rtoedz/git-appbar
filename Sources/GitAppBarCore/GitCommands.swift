@@ -9,8 +9,11 @@ extension GitRunner {
     }
 
     /// Recent history of HEAD plus its upstream, so incoming commits show up too.
-    public func log(of repo: URL, limit: Int = 300) async throws -> [CommitEntry] {
-        var args = ["log", "--topo-order", "-n", String(limit), "--format=\(GitLogParser.format)", "HEAD"]
+    /// One page of history. `skip` is applied after topo-ordering the full walk,
+    /// so consecutive pages line up as long as the refs don't move in between.
+    public func log(of repo: URL, limit: Int = 100, skip: Int = 0) async throws -> [CommitEntry] {
+        var args = ["log", "--topo-order", "-n", String(limit), "--skip", String(skip),
+                    "--format=\(GitLogParser.format)", "HEAD"]
         if let up = await upstream(of: repo) { args.append(up) }
         args.append("--")
         return GitLogParser.parse(try await run(args, in: repo))

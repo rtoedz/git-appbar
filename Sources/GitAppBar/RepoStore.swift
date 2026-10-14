@@ -36,6 +36,9 @@ final class RepoStore {
     private(set) var graph: [GraphRow] = []
     private(set) var branches: [Branch] = []
     private(set) var historyLoading = false
+    private(set) var historyLoadingMore = false
+    private(set) var historyHasMore = false
+    let historyPageSize = 100
     var selectedCommitHash: String?
     var expandedCommits: Set<String> = []
     private(set) var commitFiles: [String: [CommitFile]] = [:]
@@ -123,9 +126,12 @@ final class RepoStore {
         guard let repo = selected else { return }
 
         historyLoading = true
+        historyLoadingMore = false
+        historyHasMore = false
         let git = self.git
+        let pageSize = historyPageSize
         detailTask = Task { [weak self] in
-            async let log = try? git.log(of: repo.url)
+            async let log = try? git.log(of: repo.url, limit: pageSize)
             async let branchList = try? git.branches(of: repo.url)
             let (entries, branches) = await (log ?? [], branchList ?? [])
             let rows = await Task.detached { GraphLayout.layout(entries) }.value
@@ -133,7 +139,33 @@ final class RepoStore {
             self.history = entries
             self.graph = rows
             self.branches = branches
+            self.historyHasMore = entries.count == pageSize
             self.historyLoading = false
+        }
+    }
+
+    /// Appends the next page. The graph is re-laid out over everything loaded
+    /// so lanes stay continuous across page boundaries.
+    func loadMoreHistory() {
+        guard historyHasMore, !historyLoadingMore, !historyLoading, let repo = selected else { return }
+        historyLoadingMore = true
+        let git = self.git
+        let pageSize = historyPageSize
+        let skip = history.count
+        Task { [weak self] in
+            let page = (try? await git.log(of: repo.url, limit: pageSize, skip: skip)) ?? []
+            guard let self, self.selectedID == repo.id, self.history.count == skip else {
+                self?.historyLoadingMore = false
+                return
+            }
+            let known = Set(self.history.map(\.hash))
+            let merged = self.history + page.filter { !known.contains($0.hash) }
+            let rows = await Task.detached { GraphLayout.layout(merged) }.value
+            guard self.selectedID == repo.id else { return }
+            self.history = merged
+            self.graph = rows
+            self.historyHasMore = page.count == pageSize
+            self.historyLoadingMore = false
         }
     }
 

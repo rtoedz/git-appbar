@@ -42,10 +42,37 @@ struct HistoryView: View {
                             ExpandedFiles(repo: repo, hash: commit.hash, lanes: row.lanesBelow, graphWidth: graphWidth)
                         }
                     }
+                    HistoryFooter()
                 }
                 .padding(.vertical, 6)
             }
         }
+    }
+}
+
+/// End of the list: loads the next page when scrolled into view (LazyVStack only
+/// creates it then), with a button as a manual fallback.
+private struct HistoryFooter: View {
+    @Environment(RepoStore.self) private var store
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text("\(store.history.count) commit dimuat")
+                .foregroundStyle(Theme.textDim)
+            Spacer()
+            if store.historyLoadingMore {
+                ProgressView().controlSize(.small)
+                Text("Memuat…").foregroundStyle(Theme.textDim)
+            } else if store.historyHasMore {
+                Button("Muat \(store.historyPageSize) lagi") { store.loadMoreHistory() }
+            } else {
+                Text("Awal riwayat").foregroundStyle(Theme.textDim)
+            }
+        }
+        .font(.system(size: 12))
+        .padding(.horizontal, 18)
+        .frame(height: 40)
+        .onAppear { store.loadMoreHistory() }
     }
 }
 

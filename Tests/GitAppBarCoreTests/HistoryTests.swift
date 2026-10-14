@@ -96,6 +96,36 @@ final class HistoryTests: XCTestCase {
         XCTAssertTrue(branches[1].isRemote)
     }
 
+    // MARK: pagination
+
+    func testPagesConcatenateToFullHistoryWithBranches() async throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("gab-page-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let git = GitRunner()
+        let ident = ["-c", "user.name=Tester", "-c", "user.email=t@x.com"]
+
+        _ = try await git.run(["init", "-b", "main"], in: dir)
+        for i in 1...4 { _ = try await git.run(ident + ["commit", "--allow-empty", "-m", "main \(i)"], in: dir) }
+        _ = try await git.run(["switch", "-c", "side"], in: dir)
+        for i in 1...3 { _ = try await git.run(ident + ["commit", "--allow-empty", "-m", "side \(i)"], in: dir) }
+        _ = try await git.run(["switch", "main"], in: dir)
+        _ = try await git.run(ident + ["commit", "--allow-empty", "-m", "main 5"], in: dir)
+        _ = try await git.run(ident + ["merge", "--no-ff", "side", "-m", "merge side"], in: dir)
+
+        let full = try await git.log(of: dir, limit: 1000)
+        XCTAssertEqual(full.count, 9) // 4 main + 3 side + main 5 + merge
+
+        var paged: [CommitEntry] = []
+        while true {
+            let page = try await git.log(of: dir, limit: 3, skip: paged.count)
+            paged += page
+            if page.count < 3 { break }
+        }
+        XCTAssertEqual(paged.map(\.hash), full.map(\.hash))
+        XCTAssertEqual(GraphLayout.layout(paged), GraphLayout.layout(full))
+    }
+
     // MARK: integration on a real repo
 
     func testRealRepoLogFilesAndSwitchWithStash() async throws {
