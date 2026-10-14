@@ -15,9 +15,9 @@ struct HistoryView: View {
     let repo: RepoItem
 
     var body: some View {
-        if store.historyLoading && store.history.isEmpty {
+        if store.historyLoading && store.historyItems.isEmpty {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if store.history.isEmpty {
+        } else if store.historyItems.isEmpty {
             Text("Belum ada commit.")
                 .foregroundStyle(Theme.textDim)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -25,21 +25,19 @@ struct HistoryView: View {
             let graphWidth = GraphStyle.width(lanes: store.graphLaneCount)
             PanelScroll {
                 LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(store.history.indices, id: \.self) { i in
-                        let commit = store.history[i]
-                        let row = store.graph[i]
+                    ForEach(store.historyItems) { item in
                         CommitRow(
-                            commit: commit,
-                            row: row,
+                            commit: item.commit,
+                            row: item.row,
                             graphWidth: graphWidth,
-                            isSelected: store.selectedCommitHash == commit.hash,
-                            isExpanded: store.expandedCommits.contains(commit.hash),
+                            isSelected: store.selectedCommitHash == item.id,
+                            isExpanded: store.expandedCommits.contains(item.id),
                             currentBranch: repo.status?.branch
                         ) {
-                            store.toggleCommit(commit.hash)
+                            store.toggleCommit(item.id)
                         }
-                        if store.expandedCommits.contains(commit.hash) {
-                            ExpandedFiles(repo: repo, hash: commit.hash, lanes: row.lanesBelow, graphWidth: graphWidth)
+                        if store.expandedCommits.contains(item.id) {
+                            ExpandedFiles(repo: repo, hash: item.id, lanes: item.row.lanesBelow, graphWidth: graphWidth)
                         }
                     }
                     HistoryFooter()

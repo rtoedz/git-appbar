@@ -7,6 +7,7 @@ import SwiftUI
 @MainActor
 enum DebugRender {
     static func runIfRequested(preferences: Preferences, store: RepoStore) -> Bool {
+        if runStressIfRequested(preferences: preferences, store: store) { return true }
         guard let path = ProcessInfo.processInfo.environment["GAB_RENDER"] else { return false }
         if let roots = ProcessInfo.processInfo.environment["GAB_ROOTS"] {
             preferences.rootFolders = roots.split(separator: ":").map(String.init)
@@ -41,6 +42,49 @@ enum DebugRender {
             } else {
                 print("render failed")
             }
+            NSApp.terminate(nil)
+        }
+        return true
+    }
+}
+
+extension DebugRender {
+    /// `GAB_STRESS=1` hosts the real panel in an offscreen window and switches
+    /// between repos rapidly (with history pages loading) to catch races that
+    /// crash SwiftUI. Exits 0 when it survives.
+    static func runStressIfRequested(preferences: Preferences, store: RepoStore) -> Bool {
+        guard ProcessInfo.processInfo.environment["GAB_STRESS"] == "1" else { return false }
+        if let roots = ProcessInfo.processInfo.environment["GAB_ROOTS"] {
+            preferences.rootFolders = roots.split(separator: ":").map(String.init)
+        }
+        let window = NSWindow(contentRect: NSRect(x: -4000, y: 0, width: 1600, height: 860),
+                              styleMask: [.borderless], backing: .buffered, defer: false)
+        let host = NSHostingView(rootView: PanelRootView().environment(preferences).environment(store))
+        window.contentView = host
+        window.orderFrontRegardless()
+
+        Task { @MainActor in
+            store.rescan(roots: preferences.rootFolderURLs, depth: preferences.scanDepth)
+            try? await Task.sleep(for: .seconds(4))
+            let ids = store.repos.map(\.id)
+            print("stress: \(ids.count) repos")
+            var switches = 0
+            for round in 0..<4 {
+                for id in ids + ids.reversed() {
+                    store.selectedID = id
+                    switches += 1
+                    // Vary the gap so switches land before, during and after history loads.
+                    let gap = [5, 40, 150, 400][(switches + round) % 4]
+                    for _ in 0..<4 {
+                        host.layoutSubtreeIfNeeded()
+                        host.display()
+                        try? await Task.sleep(for: .milliseconds(gap / 4 + 1))
+                    }
+                    if let first = store.historyItems.first { store.toggleCommit(first.id) }
+                    store.loadMoreHistory()
+                }
+            }
+            print("stress: survived \(switches) switches")
             NSApp.terminate(nil)
         }
         return true

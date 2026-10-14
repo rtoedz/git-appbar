@@ -14,6 +14,15 @@ struct RepoItem: Identifiable, Equatable {
     }
 }
 
+/// A commit paired with its graph row. Views iterate these by commit hash —
+/// never by index into two parallel arrays, which crashes when the list
+/// shrinks (e.g. switching repo) while SwiftUI still updates old rows.
+struct HistoryItem: Identifiable, Equatable {
+    let commit: CommitEntry
+    let row: GraphRow
+    var id: String { commit.hash }
+}
+
 struct Banner: Equatable, Identifiable {
     let id = UUID()
     let text: String
@@ -33,7 +42,7 @@ final class RepoStore {
 
     // MARK: Selected repo details
     private(set) var history: [CommitEntry] = []
-    private(set) var graph: [GraphRow] = []
+    private(set) var historyItems: [HistoryItem] = []
     private(set) var branches: [Branch] = []
     private(set) var historyLoading = false
     private(set) var historyLoadingMore = false
@@ -54,7 +63,7 @@ final class RepoStore {
     private let maxConcurrentStatus = 6
 
     var selectedCommit: CommitEntry? { history.first { $0.hash == selectedCommitHash } }
-    var graphLaneCount: Int { min(graph.map(\.laneCount).max() ?? 1, 10) }
+    var graphLaneCount: Int { min(historyItems.map(\.row.laneCount).max() ?? 1, 10) }
 
     // MARK: Scanning
 
@@ -116,8 +125,7 @@ final class RepoStore {
 
     func loadSelectedDetails() {
         detailTask?.cancel()
-        history = []
-        graph = []
+        setHistory([], rows: [])
         branches = []
         selectedCommitHash = nil
         expandedCommits = []
@@ -136,8 +144,7 @@ final class RepoStore {
             let (entries, branches) = await (log ?? [], branchList ?? [])
             let rows = await Task.detached { GraphLayout.layout(entries) }.value
             guard let self, !Task.isCancelled, self.selectedID == repo.id else { return }
-            self.history = entries
-            self.graph = rows
+            self.setHistory(entries, rows: rows)
             self.branches = branches
             self.historyHasMore = entries.count == pageSize
             self.historyLoading = false
@@ -162,11 +169,16 @@ final class RepoStore {
             let merged = self.history + page.filter { !known.contains($0.hash) }
             let rows = await Task.detached { GraphLayout.layout(merged) }.value
             guard self.selectedID == repo.id else { return }
-            self.history = merged
-            self.graph = rows
+            self.setHistory(merged, rows: rows)
             self.historyHasMore = page.count == pageSize
             self.historyLoadingMore = false
         }
+    }
+
+    /// Commits and their graph rows always change together.
+    private func setHistory(_ entries: [CommitEntry], rows: [GraphRow]) {
+        history = entries
+        historyItems = zip(entries, rows).map { HistoryItem(commit: $0, row: $1) }
     }
 
     func toggleCommit(_ hash: String) {
