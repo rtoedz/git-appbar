@@ -28,11 +28,12 @@ enum DebugRender {
                 try? await Task.sleep(for: .seconds(1.5))
             }
 
+            let renderWidth = CGFloat(Double(ProcessInfo.processInfo.environment["GAB_RENDER_WIDTH"] ?? "") ?? 1600)
             let view = PanelRootView()
                 .environment(preferences)
                 .environment(store)
                 .environment(\.debugRender, true)
-                .frame(width: 1600, height: 860)
+                .frame(width: renderWidth, height: 860)
                 .background(Color(red: 0.23, green: 0.31, blue: 0.42))
             let renderer = ImageRenderer(content: view)
             renderer.scale = 1

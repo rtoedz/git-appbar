@@ -40,15 +40,43 @@ struct RepoDetailView: View {
         }
     }
 
+    /// Picks the first layout that fits the column width: everything on one
+    /// row, toolbar on its own row, then icon-only toolbar without upstream.
+    /// Labels never get truncated to "…".
     private var header: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 10) {
+                titleGroup(showUpstream: true)
+                Spacer(minLength: 12)
+                GitToolbar(repo: repo, compact: false)
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                titleGroup(showUpstream: true)
+                GitToolbar(repo: repo, compact: false)
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                titleGroup(showUpstream: false)
+                GitToolbar(repo: repo, compact: true)
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 14)
+        .padding(.bottom, 10)
+    }
+
+    private func titleGroup(showUpstream: Bool) -> some View {
         HStack(spacing: 10) {
-            Text(repo.name).font(.system(size: 18, weight: .semibold)).lineLimit(1)
+            Text(repo.name)
+                .font(.system(size: 18, weight: .semibold))
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .layoutPriority(-1)
             Button {
                 showBranches.toggle()
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.triangle.branch")
-                    Text(repo.status?.branch ?? "detached").lineLimit(1)
+                    Text(repo.status?.branch ?? "detached").lineLimit(1).fixedSize()
                     Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
                 }
                 .font(Theme.mono)
@@ -67,18 +95,13 @@ struct RepoDetailView: View {
             }
 
             if let s = repo.status {
-                if let up = s.upstream {
-                    Text("→ \(up)").font(Theme.mono).foregroundStyle(Theme.textDim).lineLimit(1)
+                if showUpstream, let up = s.upstream {
+                    Text("→ \(up)").font(Theme.mono).foregroundStyle(Theme.textDim).lineLimit(1).fixedSize()
                 }
-                if s.behind > 0 { Text("↓\(s.behind)").font(Theme.mono).foregroundStyle(Theme.behind) }
-                if s.ahead > 0 { Text("↑\(s.ahead)").font(Theme.mono).foregroundStyle(Theme.added) }
+                if s.behind > 0 { Text("↓\(s.behind)").font(Theme.mono).foregroundStyle(Theme.behind).fixedSize() }
+                if s.ahead > 0 { Text("↑\(s.ahead)").font(Theme.mono).foregroundStyle(Theme.added).fixedSize() }
             }
-            Spacer(minLength: 12)
-            GitToolbar(repo: repo)
         }
-        .padding(.horizontal, 18)
-        .padding(.top, 14)
-        .padding(.bottom, 10)
     }
 
     private var tabs: some View {

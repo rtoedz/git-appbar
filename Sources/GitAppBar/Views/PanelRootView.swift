@@ -72,7 +72,7 @@ struct PanelRootView: View {
                     } else {
                         Image(systemName: "arrow.triangle.2.circlepath")
                     }
-                    Text(tr("Fetch all", "Fetch semua"))
+                    Text(tr("Fetch all", "Fetch semua")).fixedSize()
                 }
                 .font(.system(size: 12))
                 .padding(.horizontal, 10)

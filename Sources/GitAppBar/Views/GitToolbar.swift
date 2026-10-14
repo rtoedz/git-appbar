@@ -5,19 +5,21 @@ import GitAppBarCore
 struct GitToolbar: View {
     @Environment(RepoStore.self) private var store
     let repo: RepoItem
+    /// Icon + count only, for narrow columns.
+    var compact = false
     @State private var showStash = false
 
     private var status: RepoStatus? { repo.status }
 
     var body: some View {
         HStack(spacing: 6) {
-            ToolbarButton(title: "Fetch", icon: "arrow.triangle.2.circlepath",
+            ToolbarButton(title: "Fetch", icon: "arrow.triangle.2.circlepath", compact: compact,
                           busy: store.busyAction == "Fetch") {
                 Task { await store.fetch() }
             }
             .help("git fetch --prune")
 
-            ToolbarButton(title: "Pull", icon: "arrow.down", count: status?.behind, countColor: Theme.behind,
+            ToolbarButton(title: "Pull", icon: "arrow.down", compact: compact, count: status?.behind, countColor: Theme.behind,
                           busy: store.busyAction == "Pull") {
                 Task { await store.pull() }
             }
@@ -25,14 +27,14 @@ struct GitToolbar: View {
             .help(status?.upstream == nil ? tr("This branch has no upstream", "Branch ini belum punya upstream")
                                            : tr("git pull --ff-only (never merges or rebases for you)", "git pull --ff-only (tidak pernah merge/rebase otomatis)"))
 
-            ToolbarButton(title: "Push", icon: "arrow.up", count: status?.ahead, countColor: Theme.added,
+            ToolbarButton(title: "Push", icon: "arrow.up", compact: compact, count: status?.ahead, countColor: Theme.added,
                           busy: store.busyAction == "Push") {
                 Task { await store.push() }
             }
             .disabled((status?.behind ?? 0) > 0)
             .help(pushHelp)
 
-            ToolbarButton(title: "Stash", icon: "tray.and.arrow.down", count: store.stashes.count,
+            ToolbarButton(title: "Stash", icon: "tray.and.arrow.down", compact: compact, count: store.stashes.count,
                           countColor: Theme.lane(1), busy: store.busyAction?.hasPrefix("Stash") == true,
                           chevron: true) {
                 showStash.toggle()
@@ -55,6 +57,7 @@ struct GitToolbar: View {
 private struct ToolbarButton: View {
     let title: String
     let icon: String
+    var compact = false
     var count: Int? = nil
     var countColor: Color = Theme.textDim
     var busy = false
@@ -71,7 +74,7 @@ private struct ToolbarButton: View {
                 } else {
                     Image(systemName: icon).font(.system(size: 11, weight: .semibold))
                 }
-                Text(title)
+                if !compact { Text(title) }
                 if let count, count > 0 {
                     Text("\(count)").foregroundStyle(countColor).font(.system(size: 12, weight: .semibold, design: .monospaced))
                 }
@@ -80,7 +83,9 @@ private struct ToolbarButton: View {
                 }
             }
             .font(.system(size: 12))
-            .padding(.horizontal, 10)
+            .lineLimit(1)
+            .fixedSize()
+            .padding(.horizontal, compact ? 8 : 10)
             .frame(height: 28)
             .background(RoundedRectangle(cornerRadius: 7).fill(Color.white.opacity(0.06)))
             .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Theme.border))
@@ -89,6 +94,7 @@ private struct ToolbarButton: View {
         }
         .buttonStyle(.plain)
         .disabled(store.isBusy)
+        .accessibilityLabel(title)
     }
 }
 
