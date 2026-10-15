@@ -73,6 +73,8 @@ struct PreferencesView: View {
                     .font(Theme.mono)
                     .frame(width: 170)
             }
+
+            Toggle(tr("Ask before opening files", "Tanya dulu sebelum membuka file"), isOn: $prefs.confirmBeforeOpening)
         }
         .font(.system(size: 13))
         .padding(16)

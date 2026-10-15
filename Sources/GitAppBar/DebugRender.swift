@@ -8,6 +8,25 @@ import SwiftUI
 enum DebugRender {
     static func runIfRequested(preferences: Preferences, store: RepoStore) -> Bool {
         if runStressIfRequested(preferences: preferences, store: store) { return true }
+        if let out = ProcessInfo.processInfo.environment["GAB_RENDER_ALERT"] {
+            if let lang = ProcessInfo.processInfo.environment["GAB_LANG"].flatMap(AppLanguage.init(rawValue:)) {
+                preferences.language = lang
+            }
+            let repo = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Project/app")
+            let alert = EditorOpener.makeAlert(file: repo.appendingPathComponent("app/(tabs)/_layout.tsx"),
+                                               path: "app/(tabs)/_layout.tsx", command: "code -g", fromHistory: true)
+            print("""
+            title: \(alert.messageText)
+            info: \(alert.informativeText)
+            buttons: \(alert.buttons.map(\.title))
+            suppression: \(alert.showsSuppressionButton) "\(alert.suppressionButton?.title ?? "-")"
+            level>panel: \(alert.window.level.rawValue > NSWindow.Level.statusBar.rawValue)
+            names: \(["code -g", "cursor -g", "zed", "open -a Xcode", "", "/usr/local/bin/subl"].map(EditorOpener.editorName(for:)))
+            """)
+            _ = out
+            NSApp.terminate(nil)
+            return true
+        }
         guard let path = ProcessInfo.processInfo.environment["GAB_RENDER"] else { return false }
         if let lang = ProcessInfo.processInfo.environment["GAB_LANG"].flatMap(AppLanguage.init(rawValue:)) {
             preferences.language = lang

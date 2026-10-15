@@ -122,7 +122,7 @@ struct CommitDetailView: View {
                         deletions: file.deletions,
                         enabled: file.status != "D"
                     ) {
-                        EditorOpener.open(repo.url.appendingPathComponent(file.path), command: prefs.editorCommand)
+                        EditorOpener.requestOpen(repo: repo.url, path: file.path, prefs: prefs, store: store, fromHistory: true)
                     }
                 }
             }

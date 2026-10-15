@@ -203,7 +203,7 @@ struct ChangesContent: View {
                                         badge: change.badge,
                                         trailing: change.isStaged ? "staged" : nil
                                     ) {
-                                        EditorOpener.open(repo.url.appendingPathComponent(change.path), command: prefs.editorCommand)
+                                        EditorOpener.requestOpen(repo: repo.url, path: change.path, prefs: prefs, store: store)
                                     }
                                 }
                                 .padding(.leading, 10)

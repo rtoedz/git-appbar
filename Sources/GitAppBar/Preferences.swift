@@ -12,6 +12,7 @@ final class Preferences {
         static let scanDepth = "repos.scanDepth"
         static let editorCommand = "editor.command"
         static let language = "app.language"
+        static let confirmOpen = "editor.confirmOpen"
     }
 
     private let defaults: UserDefaults
@@ -49,6 +50,11 @@ final class Preferences {
         }
     }
 
+    /// Ask before opening a clicked file in the editor.
+    var confirmBeforeOpening: Bool {
+        didSet { defaults.set(confirmBeforeOpening, forKey: Key.confirmOpen) }
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         let savedLanguage = defaults.string(forKey: Key.language).flatMap(AppLanguage.init(rawValue:)) ?? .english
@@ -65,6 +71,7 @@ final class Preferences {
         }
         scanDepth = defaults.object(forKey: Key.scanDepth) as? Int ?? 4
         editorCommand = defaults.string(forKey: Key.editorCommand) ?? "code -g"
+        confirmBeforeOpening = defaults.object(forKey: Key.confirmOpen) as? Bool ?? true
     }
 
     var rootFolderURLs: [URL] {
