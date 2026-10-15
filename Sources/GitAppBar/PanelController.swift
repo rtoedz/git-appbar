@@ -57,9 +57,22 @@ final class PanelController {
         NotificationCenter.default.addObserver(forName: .gabHidePanel, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.hide() }
         }
+        // Step below system modals (folder chooser) while they run, then come back.
+        NotificationCenter.default.addObserver(forName: .gabModalWillBegin, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.panel.level = .normal }
+        }
+        NotificationCenter.default.addObserver(forName: .gabModalDidEnd, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.panel.level = .statusBar
+                if self.panel.isVisible { self.panel.makeKey() }
+            }
+        }
     }
 
     var isVisible: Bool { panel.isVisible }
+    var windowNumber: Int { panel.windowNumber }
+    var level: NSWindow.Level { panel.level }
     var isKey: Bool { panel.isKeyWindow }
 
     func toggle(on screen: NSScreen?) {

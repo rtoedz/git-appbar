@@ -27,6 +27,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if ProcessInfo.processInfo.environment["GAB_ESC_TEST"] == "1" {
             runEscapeTest()
         }
+        if ProcessInfo.processInfo.environment["GAB_PICKER_TEST"] == "1" {
+            runPickerTest()
+        }
     }
 
     /// Opens the panel via the status item, then sends Esc; prints the outcome and quits.
@@ -59,6 +62,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if panel.isVisible { failures += 1 }
 
             print(failures == 0 ? "esc-test: PASS" : "esc-test: FAIL")
+            NSApp.terminate(nil)
+        }
+    }
+
+    /// Opens the panel, opens the folder chooser, and checks *while it is on
+    /// screen* that it is in front of the panel; then cancels it.
+    private func runPickerTest() {
+        Task { @MainActor in
+            statusItem.button?.performClick(nil)
+            try? await Task.sleep(for: .milliseconds(600))
+            var inFront = false
+            var levels = ""
+            FolderPicker.whileOpen = { [panel] chooser in
+                let order = NSWindow.windowNumbers(options: []) ?? []   // front to back
+                let chooserIndex = order.firstIndex(of: NSNumber(value: chooser.windowNumber))
+                let panelIndex = order.firstIndex(of: NSNumber(value: panel!.windowNumber))
+                inFront = chooser.isVisible && chooserIndex != nil && panelIndex != nil && chooserIndex! < panelIndex!
+                levels = "chooser=\(chooser.level.rawValue) panel=\(panel!.level.rawValue) order=\(String(describing: chooserIndex))<\(String(describing: panelIndex))"
+                NSApp.abortModal()
+            }
+            _ = FolderPicker.pickFolders()
+            FolderPicker.whileOpen = nil
+            try? await Task.sleep(for: .milliseconds(200))
+            let restored = panel.level == .statusBar && panel.isVisible
+            print("picker-test: \(levels) chooserInFront=\(inFront) panelRestored=\(restored)")
+            print(inFront && restored ? "picker-test: PASS" : "picker-test: FAIL")
             NSApp.terminate(nil)
         }
     }
