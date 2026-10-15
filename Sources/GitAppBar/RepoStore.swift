@@ -23,6 +23,14 @@ struct HistoryItem: Identifiable, Equatable {
     var id: String { commit.hash }
 }
 
+/// A file waiting for the user to confirm opening it in the editor.
+struct PendingOpen: Equatable {
+    let file: URL
+    let path: String
+    let command: String
+    let fromHistory: Bool
+}
+
 struct Banner: Equatable, Identifiable {
     let id = UUID()
     let text: String
@@ -71,6 +79,8 @@ final class RepoStore {
     var isBusy: Bool { busyAction != nil }
     private(set) var isFetchingAll = false
     private(set) var banner: Banner?
+    /// Non-nil while the "open in editor?" dialog is showing.
+    var pendingOpen: PendingOpen?
 
     private let git = GitRunner()
     private var scanTask: Task<Void, Never>?

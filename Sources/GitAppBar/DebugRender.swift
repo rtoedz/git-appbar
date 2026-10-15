@@ -8,25 +8,7 @@ import SwiftUI
 enum DebugRender {
     static func runIfRequested(preferences: Preferences, store: RepoStore) -> Bool {
         if runStressIfRequested(preferences: preferences, store: store) { return true }
-        if let out = ProcessInfo.processInfo.environment["GAB_RENDER_ALERT"] {
-            if let lang = ProcessInfo.processInfo.environment["GAB_LANG"].flatMap(AppLanguage.init(rawValue:)) {
-                preferences.language = lang
-            }
-            let repo = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Project/app")
-            let alert = EditorOpener.makeAlert(file: repo.appendingPathComponent("app/(tabs)/_layout.tsx"),
-                                               path: "app/(tabs)/_layout.tsx", command: "code -g", fromHistory: true)
-            print("""
-            title: \(alert.messageText)
-            info: \(alert.informativeText)
-            buttons: \(alert.buttons.map(\.title))
-            suppression: \(alert.showsSuppressionButton) "\(alert.suppressionButton?.title ?? "-")"
-            level>panel: \(alert.window.level.rawValue > NSWindow.Level.statusBar.rawValue)
-            names: \(["code -g", "cursor -g", "zed", "open -a Xcode", "", "/usr/local/bin/subl"].map(EditorOpener.editorName(for:)))
-            """)
-            _ = out
-            NSApp.terminate(nil)
-            return true
-        }
+
         guard let path = ProcessInfo.processInfo.environment["GAB_RENDER"] else { return false }
         if let lang = ProcessInfo.processInfo.environment["GAB_LANG"].flatMap(AppLanguage.init(rawValue:)) {
             preferences.language = lang
@@ -45,6 +27,12 @@ enum DebugRender {
             if let first = store.history.dropFirst().first {
                 store.toggleCommit(first.hash)
                 try? await Task.sleep(for: .seconds(1.5))
+                // GAB_RENDER_CONFIRM=1 shows the open-in-editor dialog for its first file.
+                if ProcessInfo.processInfo.environment["GAB_RENDER_CONFIRM"] == "1",
+                   let repo = store.selected, let file = store.commitFiles[first.hash]?.first {
+                    store.pendingOpen = PendingOpen(file: repo.url.appendingPathComponent(file.path), path: file.path,
+                                                    command: preferences.editorCommand, fromHistory: true)
+                }
             }
 
             let renderWidth = CGFloat(Double(ProcessInfo.processInfo.environment["GAB_RENDER_WIDTH"] ?? "") ?? 1600)

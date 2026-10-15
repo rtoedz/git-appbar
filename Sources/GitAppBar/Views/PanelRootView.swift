@@ -37,7 +37,16 @@ struct PanelRootView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(Theme.border, lineWidth: 1)
         )
+        .overlay {
+            if let pending = store.pendingOpen {
+                OpenConfirmDialog(pending: pending)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+        }
+        .animation(debugRender ? nil : .easeOut(duration: 0.12), value: store.pendingOpen)
         .environment(\.locale, Localizer.shared.locale)
+        // The panel is designed dark; keep controls dark even in light mode.
+        .environment(\.colorScheme, .dark)
         .onAppear { if !debugRender { rescan() } }
         .onChange(of: prefs.rootFolders) { rescan() }
         .onChange(of: prefs.scanDepth) { rescan() }

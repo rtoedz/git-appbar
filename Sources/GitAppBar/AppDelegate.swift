@@ -44,6 +44,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if !(opened && key && closed) { failures += 1 }
                 print("esc-test round \(round): opened=\(opened) key=\(key) closedByEsc=\(closed)")
             }
+            // With the open-in-editor dialog up, Esc closes only the dialog.
+            statusItem.button?.performClick(nil)
+            try? await Task.sleep(for: .milliseconds(600))
+            store.pendingOpen = PendingOpen(file: URL(fileURLWithPath: "/tmp/x"), path: "x", command: "code -g", fromHistory: false)
+            panel.debugSendEscape()
+            try? await Task.sleep(for: .milliseconds(300))
+            let dialogClosed = store.pendingOpen == nil
+            let panelStillOpen = panel.isVisible
+            print("esc-test dialog: dialogClosed=\(dialogClosed) panelStillOpen=\(panelStillOpen)")
+            if !(dialogClosed && panelStillOpen) { failures += 1 }
+            panel.debugSendEscape()
+            try? await Task.sleep(for: .milliseconds(300))
+            if panel.isVisible { failures += 1 }
+
             print(failures == 0 ? "esc-test: PASS" : "esc-test: FAIL")
             NSApp.terminate(nil)
         }

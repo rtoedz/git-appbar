@@ -42,6 +42,7 @@ final class PanelController {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
         panel.isMovable = false
         panel.isReleasedWhenClosed = false
+        panel.appearance = NSAppearance(named: .darkAqua)
         // A non-activating panel can take keyboard focus without pulling our
         // app to the front; make sure it always does when shown.
         panel.becomesKeyOnlyIfNeeded = false
@@ -88,6 +89,7 @@ final class PanelController {
     }
 
     func hide() {
+        store.pendingOpen = nil
         // Popovers (Preferences, branch picker) are child windows of the panel.
         panel.childWindows?.forEach { $0.orderOut(nil) }
         panel.orderOut(nil)
@@ -101,7 +103,12 @@ final class PanelController {
         }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self, event.keyCode == 53, self.handlesEscape(from: event.window) else { return event }
-            self.hide()
+            // Esc first dismisses the in-panel confirmation, then the panel.
+            if self.store.pendingOpen != nil {
+                self.store.pendingOpen = nil
+            } else {
+                self.hide()
+            }
             return nil
         }
     }

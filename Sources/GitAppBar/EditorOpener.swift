@@ -21,47 +21,12 @@ enum EditorOpener {
             return
         }
         if prefs.confirmBeforeOpening {
-            switch confirm(file: file, path: path, command: prefs.editorCommand, fromHistory: fromHistory) {
-            case .cancel:
-                return
-            case .open(let dontAskAgain):
-                if dontAskAgain { prefs.confirmBeforeOpening = false }
-            }
+            // Shown inside the panel (see OpenConfirmDialog): a separate alert
+            // window ends up behind the status-bar-level panel.
+            store.pendingOpen = PendingOpen(file: file, path: path, command: prefs.editorCommand, fromHistory: fromHistory)
+            return
         }
         open(file, command: prefs.editorCommand)
-    }
-
-    private enum Choice { case open(dontAskAgain: Bool), cancel }
-
-    private static func confirm(file: URL, path: String, command: String, fromHistory: Bool) -> Choice {
-        let alert = makeAlert(file: file, path: path, command: command, fromHistory: fromHistory)
-        NSApp.activate()
-        let response = alert.runModal()
-        guard response == .alertFirstButtonReturn else { return .cancel }
-        return .open(dontAskAgain: alert.suppressionButton?.state == .on)
-    }
-
-    static func makeAlert(file: URL, path: String, command: String, fromHistory: Bool) -> NSAlert {
-        let editor = editorName(for: command)
-        let alert = NSAlert()
-        alert.alertStyle = .informational
-        alert.messageText = tr("Open in \(editor)?", "Buka di \(editor)?")
-        var info = tr("\((path as NSString).lastPathComponent) will be opened with:",
-                      "\((path as NSString).lastPathComponent) akan dibuka dengan:")
-        info += "\n\(command.isEmpty ? "open" : command) \((file.path as NSString).abbreviatingWithTildeInPath)"
-        if fromHistory {
-            info += "\n\n" + tr("This opens the current version in your working tree, not the version from this commit.",
-                                "Yang dibuka adalah versi sekarang di working tree, bukan versi dari commit ini.")
-        }
-        alert.informativeText = info
-        alert.addButton(withTitle: tr("Open", "Buka"))
-        alert.addButton(withTitle: tr("Cancel", "Batal"))
-        alert.showsSuppressionButton = true
-        alert.suppressionButton?.title = tr("Don't ask again", "Jangan tanya lagi")
-        // The repo panel floats at status-bar level; keep the alert above it.
-        alert.layout()
-        alert.window.level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
-        return alert
     }
 
     /// Friendly name for the configured CLI: `code -g` → "VS Code".
