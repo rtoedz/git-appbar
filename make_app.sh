@@ -7,11 +7,11 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 APP_NAME="GitAppBar"
-BUILD_DIR=".build/release"
 APP="${APP_NAME}.app"
 
-echo "▶ Building release…"
-swift build -c release
+echo "▶ Building release (universal: arm64 + x86_64)…"
+swift build -c release --arch arm64 --arch x86_64
+BUILD_DIR="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)"
 
 echo "▶ Assembling ${APP}…"
 rm -rf "$APP"

@@ -6,6 +6,8 @@
     <string>Git AppBar</string>
     <key>CFBundleDisplayName</key>
     <string>Git AppBar</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
     <string>io.github.rtoedz.gitappbar</string>
     <key>CFBundleExecutable</key>

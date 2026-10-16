@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/icon.png" width="128" alt="Git AppBar icon"></p>
+
 # Git AppBar
 
 A macOS menu bar app for working with many git repositories at once — like
@@ -46,21 +48,34 @@ API token involved.
 
 ## Install
 
-Requirements: macOS 14+, Xcode / Swift 6 toolchain, `git` at `/usr/bin/git`.
+**Download:** grab `GitAppBar-x.y.z.dmg` from the
+[latest release](https://github.com/rtoedz/git-appbar/releases/latest), open it
+and drag **Git AppBar** onto **Applications**. Universal binary (Apple Silicon
+and Intel), macOS 14 or later.
+
+The app is ad-hoc signed, not notarized, so macOS blocks the first launch.
+Open it once, then go to **System Settings → Privacy & Security** and click
+**Open Anyway**. Or from Terminal:
 
 ```bash
-git clone https://github.com/rtoedz/git-appbar.git
-cd git-appbar
-./make_app.sh                       # builds GitAppBar.app
-cp -R GitAppBar.app ~/Applications/
-open ~/Applications/GitAppBar.app
+xattr -dr com.apple.quarantine /Applications/GitAppBar.app
 ```
 
 Click the branch icon in the menu bar, choose the folder(s) that contain your
 projects, and you're set. `Esc` or a click outside closes the panel.
 
-The app is ad-hoc signed and not sandboxed (it needs to run `git` in your
-folders), so it is not distributed through the App Store.
+**Build from source** (Xcode / Swift 6 toolchain, `git` at `/usr/bin/git`):
+
+```bash
+git clone https://github.com/rtoedz/git-appbar.git
+cd git-appbar
+./make_app.sh        # universal GitAppBar.app
+./make_dmg.sh        # optional: .build-dmg/GitAppBar-<version>.dmg
+open GitAppBar.app
+```
+
+The app is not sandboxed (it runs `git` in your folders), so it is not
+distributed through the App Store.
 
 ## Development
 

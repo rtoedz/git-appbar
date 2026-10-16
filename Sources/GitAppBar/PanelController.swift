@@ -57,6 +57,13 @@ final class PanelController {
         NotificationCenter.default.addObserver(forName: .gabHidePanel, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.hide() }
         }
+        // When our app finishes becoming active, make sure the visible panel is key.
+        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.panel.isVisible, NSApp.modalWindow == nil, !self.panel.isKeyWindow else { return }
+                self.panel.makeKey()
+            }
+        }
         // Step below system modals (folder chooser) while they run, then come back.
         NotificationCenter.default.addObserver(forName: .gabModalWillBegin, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.panel.level = .normal }
@@ -97,6 +104,13 @@ final class PanelController {
         panel.orderFrontRegardless()
         panel.makeKey()
         panel.makeFirstResponder(panel.contentView)
+        // Activation finishes asynchronously and can take key status away
+        // again (seen intermittently in GAB_ESC_TEST), so claim it once more
+        // on the next turn of the run loop.
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.panel.isVisible, !self.panel.isKeyWindow else { return }
+            self.panel.makeKey()
+        }
         installMonitors()
         Task { await store.refreshStatuses() }
     }
