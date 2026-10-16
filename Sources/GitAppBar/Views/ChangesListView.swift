@@ -36,6 +36,8 @@ struct RepoDetailView: View {
         }
         .onAppear {
             // Land where the work is: uncommitted changes → Changes tab.
+            // (GAB_RENDER_TAB=history keeps History for README screenshots.)
+            if ProcessInfo.processInfo.environment["GAB_RENDER_TAB"] == "history" { return }
             if let n = repo.status?.changes.count, n > 0 { tab = .changes }
         }
     }

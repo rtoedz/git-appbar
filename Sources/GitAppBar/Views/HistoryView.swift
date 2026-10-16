@@ -95,6 +95,8 @@ private struct CommitRow: View {
                     .foregroundStyle(isSelected ? Theme.behind : Theme.text)
                     .lineLimit(1)
                     .truncationMode(.tail)
+                    // The subject matters more than the ref pills: keep it readable.
+                    .frame(minWidth: 180, alignment: .leading)
                 ForEach(commit.refs.prefix(3), id: \.self) { ref in
                     RefPill(ref: ref, isCurrent: ref == currentBranch && commit.isHead)
                 }
@@ -149,13 +151,27 @@ struct RefPill: View {
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: isCurrent ? "scope" : icon).font(.system(size: 9, weight: .semibold))
-            Text(label).font(.system(size: 11, weight: .medium)).lineLimit(1)
+            Text(label).font(.system(size: 11, weight: .medium)).lineLimit(1).truncationMode(.middle)
         }
         .padding(.horizontal, 7)
         .frame(height: 18)
         .foregroundStyle(isCurrent ? Color.white : color)
         .background(Capsule().fill(isCurrent ? color.opacity(0.85) : color.opacity(0.16)))
-        .fixedSize()
+        .modifier(PillSizing(fixed: isCurrent))
+        .help(label)
+    }
+}
+
+/// The checked-out branch pill always shows in full; other ref pills give
+/// way to the commit subject on narrow rows.
+private struct PillSizing: ViewModifier {
+    let fixed: Bool
+    func body(content: Content) -> some View {
+        if fixed {
+            content.fixedSize()
+        } else {
+            content.frame(minWidth: 56).layoutPriority(-1)
+        }
     }
 }
 
