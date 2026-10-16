@@ -16,5 +16,5 @@ DerivedData/
 .vscode/
 .claude/
 
-# Local Claude instructions (not for public repo)
+# Local notes (not for the public repo)
 CLAUDE.md
